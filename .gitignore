@@ -7,6 +7,8 @@
 *.so
 *.dylib
 
+cmd/ec2/ec2
+
 # Test binary, built with `go test -c`
 *.test
 

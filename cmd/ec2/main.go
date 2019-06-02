@@ -3,22 +3,30 @@ package main
 import (
 	"fmt"
 	"os"
-	"regexp"
 
 	. "github.com/yuya-tajima/aws-go/aws"
 )
 
+func usage() {
+	ExitErrorf("Usage: ec2 profile {start|stop|desc [tag]}")
+}
+
 func main() {
 
 	if len(os.Args) < 3 {
-		ExitErrorf("Usage: ec2 profile {start|stop}")
+		usage()
 	}
 
 	profile := os.Args[1]
 
 	action := os.Args[2]
-	if action != "start" && action != "stop" {
-		ExitErrorf("Usage: ec2 {start|stop}")
+	if action != "start" && action != "stop" && action != "desc" {
+		usage()
+	}
+
+	tag := ``
+	if len(os.Args) > 3 {
+		tag = fmt.Sprintf(`%s`, os.Args[3])
 	}
 
 	_aws := Aws{}
@@ -29,20 +37,19 @@ func main() {
 	result, err := _aws.GetInstances()
 
 	if err != nil {
-		ExitErrorf("failed to get instances, profile '%v'  %v.", profile, err)
+		ExitErrorf("failed to get instances, profile '%s'  %v.", profile, err)
 	}
 
 	if len(result) > 0 {
 		for _, i := range result {
-			for _, v := range i.Tags {
-				r := regexp.MustCompile(`test`)
-				if *v.Key == "Name" && r.MatchString(*v.Value) {
-					switch action {
-					case "start":
-						_aws.Start(*i.InstanceId)
-					case "stop":
-						_aws.Stop(*i.InstanceId)
-					}
+			if len(tag) == 0 || HasTagName(tag, i) {
+				switch action {
+				case "start":
+					_aws.Start(*i.InstanceId)
+				case "stop":
+					_aws.Stop(*i.InstanceId)
+				case "desc":
+					ShowDetails(i)
 				}
 			}
 		}

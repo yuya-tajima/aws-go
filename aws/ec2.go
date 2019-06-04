@@ -10,12 +10,29 @@ import (
 
 type instances []*ec2.Instance
 
-func (a *Aws) Start(s string) {
+func (a *Aws) Reboot(s *string, dry bool) {
+
+	input := &ec2.RebootInstancesInput{
+		InstanceIds: []*string{
+			s,
+		},
+		DryRun: aws.Bool(dry),
+	}
+
+	result, err := a.ec2.RebootInstances(input)
+
+	MaybeError(err)
+
+	fmt.Println(result)
+}
+
+func (a *Aws) Start(s *string, dry bool) {
 
 	input := &ec2.StartInstancesInput{
 		InstanceIds: []*string{
-			aws.String(s),
+			s,
 		},
+		DryRun: aws.Bool(dry),
 	}
 
 	result, err := a.ec2.StartInstances(input)
@@ -25,12 +42,13 @@ func (a *Aws) Start(s string) {
 	fmt.Println(result)
 }
 
-func (a *Aws) Stop(s string) {
+func (a *Aws) Stop(s *string, dry bool) {
 
 	input := &ec2.StopInstancesInput{
 		InstanceIds: []*string{
-			aws.String(s),
+			s,
 		},
+		DryRun: aws.Bool(dry),
 	}
 
 	result, err := a.ec2.StopInstances(input)
@@ -45,17 +63,17 @@ func (a *Aws) SetClient() {
 }
 
 func ShowDetails(i *ec2.Instance) {
-	fmt.Printf("InstanceId: %s \n", *i.InstanceId)
-	fmt.Printf("ImageId: %s \n", *i.ImageId)
-	fmt.Printf("InstanceType: %s \n", *i.InstanceType)
-	fmt.Printf("PrivateIpAddress: %s \n", *i.PrivateIpAddress)
-	fmt.Printf("PublicIpAddress: %s \n", *i.PublicIpAddress)
-	fmt.Printf("State: code:%d name:%s \n", *i.State.Code, *i.State.Name)
+	fmt.Printf("InstanceId: %s \n", aws.StringValue(i.InstanceId))
+	fmt.Printf("ImageId: %s \n", aws.StringValue(i.ImageId))
+	fmt.Printf("InstanceType: %s \n", aws.StringValue(i.InstanceType))
+	fmt.Printf("PrivateIpAddress: %s \n", aws.StringValue(i.PrivateIpAddress))
+	fmt.Printf("PublicIpAddress: %s \n", aws.StringValue(i.PublicIpAddress))
+	fmt.Printf("State: code:%d name:%s \n", aws.Int64Value(i.State.Code), aws.StringValue(i.State.Name))
 
 	if len(i.Tags) > 0 {
 		fmt.Print("*** The following tags are defined ***\n")
 		for _, v := range i.Tags {
-			fmt.Printf("%v:%v\n", *v.Key, *v.Value)
+			fmt.Printf("%s:%s\n", aws.StringValue(v.Key), aws.StringValue(v.Value))
 		}
 	}
 }
@@ -67,7 +85,7 @@ func HasTagName(tag string, i *ec2.Instance) bool {
 
 	r := regexp.MustCompile(tag)
 	for _, v := range i.Tags {
-		if *v.Key == "Name" && r.MatchString(*v.Value) {
+		if aws.StringValue(v.Key) == "Name" && r.MatchString(aws.StringValue(v.Value)) {
 			return true
 		}
 	}
@@ -76,7 +94,6 @@ func HasTagName(tag string, i *ec2.Instance) bool {
 }
 
 func (a *Aws) GetInstances() (instances, error) {
-
 	result, err := a.ec2.DescribeInstances(nil)
 
 	ins := instances{}

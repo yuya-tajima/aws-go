@@ -12,6 +12,11 @@ import (
 type Aws struct {
 	session *session.Session
 	ec2     *ec2.EC2
+	profile string
+}
+
+func (a *Aws) GetProfile() string {
+	return a.profile
 }
 
 func (a *Aws) SetSession(profile string) {
@@ -22,6 +27,7 @@ func (a *Aws) SetSession(profile string) {
 	}))
 
 	a.session = sess
+	a.profile = profile
 }
 
 func ExitErrorf(msg string, args ...interface{}) {

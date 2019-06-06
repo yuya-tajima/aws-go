@@ -93,8 +93,22 @@ func HasTagName(tag string, i *ec2.Instance) bool {
 	return false
 }
 
-func (a *Aws) GetInstances() (instances, error) {
-	result, err := a.ec2.DescribeInstances(nil)
+func (a *Aws) GetInstances(tag string) (instances, error) {
+
+	var input *ec2.DescribeInstancesInput
+
+	if len(tag) > 0 {
+		input = &ec2.DescribeInstancesInput{
+			Filters: []*ec2.Filter{
+				{
+					Name:   aws.String("tag:Name"),
+					Values: []*string{aws.String(tag)},
+				},
+			},
+		}
+	}
+
+	result, err := a.ec2.DescribeInstances(input)
 
 	ins := instances{}
 

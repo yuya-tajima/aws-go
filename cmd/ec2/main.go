@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "fmt"
+	"fmt"
 	"os"
 
 	"github.com/urfave/cli"
@@ -15,23 +15,20 @@ const (
 	desc   = "desc"
 )
 
-func getAws(d map[string]interface{}) *aws.Aws {
-	return d["aws"].(*aws.Aws)
+var _aws *aws.Aws
+
+func getNameTag(c *cli.Context) string {
+	return c.App.Metadata["tag"].(string)
 }
 
-func getTag(d map[string]interface{}) string {
-	return d["tag"].(string)
+func isDryRun(c *cli.Context) bool {
+	return c.App.Metadata["isDry"].(bool)
 }
 
-func isDryRun(d map[string]interface{}) bool {
-	return d["isDry"].(bool)
-}
-
-func setMetaData(c *cli.Context, isDry bool, _aws *aws.Aws, tag string) {
+func setMetaData(c *cli.Context) {
 	c.App.Metadata = map[string]interface{}{
-		"isDry": isDry,
-		"aws":   _aws,
-		"tag":   tag,
+		"isDry": c.GlobalBool("dryrun"),
+		"tag":   c.GlobalString("tag"),
 	}
 }
 
@@ -40,6 +37,8 @@ func main() {
 	app := cli.NewApp()
 
 	app.Name = "ec2"
+	app.Usage = "you can simply manage your ec2"
+	app.Version = "0.1.0"
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -54,7 +53,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "tag, t",
-			Usage: "value associated with Name tag",
+			Usage: "Name tag value associated with Name tag",
 		},
 	}
 
@@ -63,18 +62,15 @@ func main() {
 			Name:  start,
 			Usage: "",
 			Action: func(c *cli.Context) error {
-				_aws := getAws(c.App.Metadata)
-				isDry := isDryRun(c.App.Metadata)
-				result, err := _aws.GetInstances()
+				isDry := isDryRun(c)
+				tag := getNameTag(c)
+				result, err := _aws.GetInstances(tag)
 				if err != nil {
 					aws.ExitErrorf("failed to get instances, profile '%s' %v.", _aws.GetProfile(), err)
 				}
-				tag := getTag(c.App.Metadata)
 				if len(result) > 0 {
 					for _, i := range result {
-						if len(tag) == 0 || aws.HasTagName(tag, i) {
-							_aws.Start(i.InstanceId, isDry)
-						}
+						_aws.Start(i.InstanceId, isDry)
 					}
 				}
 				return nil
@@ -84,18 +80,15 @@ func main() {
 			Name:  stop,
 			Usage: "",
 			Action: func(c *cli.Context) error {
-				_aws := getAws(c.App.Metadata)
-				isDry := isDryRun(c.App.Metadata)
-				result, err := _aws.GetInstances()
+				isDry := isDryRun(c)
+				tag := getNameTag(c)
+				result, err := _aws.GetInstances(tag)
 				if err != nil {
 					aws.ExitErrorf("failed to get instances, profile '%s' %v.", _aws.GetProfile(), err)
 				}
-				tag := getTag(c.App.Metadata)
 				if len(result) > 0 {
 					for _, i := range result {
-						if len(tag) == 0 || aws.HasTagName(tag, i) {
-							_aws.Stop(i.InstanceId, isDry)
-						}
+						_aws.Stop(i.InstanceId, isDry)
 					}
 				} else {
 					fmt.Printf("There is no instance.\n")
@@ -107,18 +100,15 @@ func main() {
 			Name:  reboot,
 			Usage: "",
 			Action: func(c *cli.Context) error {
-				_aws := getAws(c.App.Metadata)
-				isDry := isDryRun(c.App.Metadata)
-				result, err := _aws.GetInstances()
+				isDry := isDryRun(c)
+				tag := getNameTag(c)
+				result, err := _aws.GetInstances(tag)
 				if err != nil {
 					aws.ExitErrorf("failed to get instances, profile '%s' %v.", _aws.GetProfile(), err)
 				}
-				tag := getTag(c.App.Metadata)
 				if len(result) > 0 {
 					for _, i := range result {
-						if len(tag) == 0 || aws.HasTagName(tag, i) {
-							_aws.Reboot(i.InstanceId, isDry)
-						}
+						_aws.Reboot(i.InstanceId, isDry)
 					}
 				} else {
 					fmt.Printf("There is no instance.\n")
@@ -130,17 +120,14 @@ func main() {
 			Name:  desc,
 			Usage: "",
 			Action: func(c *cli.Context) error {
-				_aws := getAws(c.App.Metadata)
-				result, err := _aws.GetInstances()
+				tag := getNameTag(c)
+				result, err := _aws.GetInstances(tag)
 				if err != nil {
 					aws.ExitErrorf("failed to get instances, profile '%s' %v.", _aws.GetProfile(), err)
 				}
-				tag := getTag(c.App.Metadata)
 				if len(result) > 0 {
 					for _, i := range result {
-						if len(tag) == 0 || aws.HasTagName(tag, i) {
-							aws.ShowDetails(i)
-						}
+						aws.ShowDetails(i)
 					}
 				} else {
 					fmt.Printf("There is no instance.\n")
@@ -151,18 +138,15 @@ func main() {
 	}
 
 	app.Before = func(c *cli.Context) error {
-		_aws := &aws.Aws{}
+		_aws = &aws.Aws{}
 		_aws.SetSession(c.GlobalString("profile"))
 		_aws.SetClient()
-		isDry := c.GlobalBool("dryrun")
-		tag := c.GlobalString("tag")
-		setMetaData(c, isDry, _aws, tag)
+		setMetaData(c)
 		return nil
 	}
 
 	err := app.Run(os.Args)
 	if err != nil {
-		//
+		aws.ExitErrorf("%v.", err)
 	}
-
 }

@@ -5,64 +5,70 @@ import (
 	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 )
 
-type instances []*ec2.Instance
+type ec2 struct {
+	svc *_ec2.EC2
+}
 
-func (a *Aws) Reboot(s *string, dry bool) {
+type instances []*_ec2.Instance
 
-	input := &ec2.RebootInstancesInput{
+func (a *Aws) SetEc2Client() {
+	a.ec2 = &ec2{
+		svc: _ec2.New(a.session),
+	}
+}
+
+func (a *ec2) Reboot(s *string, dry bool) {
+
+	input := &_ec2.RebootInstancesInput{
 		InstanceIds: []*string{
 			s,
 		},
 		DryRun: aws.Bool(dry),
 	}
 
-	result, err := a.ec2.RebootInstances(input)
+	result, err := a.svc.RebootInstances(input)
 
-	MaybeError(err)
+	MaybeExitError(err)
 
 	fmt.Println(result)
 }
 
-func (a *Aws) Start(s *string, dry bool) {
+func (a *ec2) Start(s *string, dry bool) {
 
-	input := &ec2.StartInstancesInput{
+	input := &_ec2.StartInstancesInput{
 		InstanceIds: []*string{
 			s,
 		},
 		DryRun: aws.Bool(dry),
 	}
 
-	result, err := a.ec2.StartInstances(input)
+	result, err := a.svc.StartInstances(input)
 
-	MaybeError(err)
+	MaybeExitError(err)
 
 	fmt.Println(result)
 }
 
-func (a *Aws) Stop(s *string, dry bool) {
+func (a *ec2) Stop(s *string, dry bool) {
 
-	input := &ec2.StopInstancesInput{
+	input := &_ec2.StopInstancesInput{
 		InstanceIds: []*string{
 			s,
 		},
 		DryRun: aws.Bool(dry),
 	}
 
-	result, err := a.ec2.StopInstances(input)
+	result, err := a.svc.StopInstances(input)
 
 	MaybeError(err)
 
 	fmt.Println(result)
 }
 
-func (a *Aws) SetClient() {
-	a.ec2 = ec2.New(a.session)
-}
-
-func ShowDetails(i *ec2.Instance) {
+func ShowDetails(i *_ec2.Instance) {
 	fmt.Printf("InstanceId: %s \n", aws.StringValue(i.InstanceId))
 	fmt.Printf("ImageId: %s \n", aws.StringValue(i.ImageId))
 	fmt.Printf("InstanceType: %s \n", aws.StringValue(i.InstanceType))
@@ -71,14 +77,16 @@ func ShowDetails(i *ec2.Instance) {
 	fmt.Printf("State: code:%d name:%s \n", aws.Int64Value(i.State.Code), aws.StringValue(i.State.Name))
 
 	if len(i.Tags) > 0 {
-		fmt.Print("*** The following tags are defined ***\n")
+		fmt.Print("*** This instance is associated with the following Tags. ***\n")
 		for _, v := range i.Tags {
 			fmt.Printf("%s:%s\n", aws.StringValue(v.Key), aws.StringValue(v.Value))
 		}
+	} else {
+		fmt.Print("This instance is not associated with any Tags. \n")
 	}
 }
 
-func HasTagName(tag string, i *ec2.Instance) bool {
+func HasTagName(tag string, i *_ec2.Instance) bool {
 	if len(i.Tags) == 0 {
 		return false
 	}
@@ -93,13 +101,13 @@ func HasTagName(tag string, i *ec2.Instance) bool {
 	return false
 }
 
-func (a *Aws) GetInstances(tag string) (instances, error) {
+func (a *ec2) GetInstances(tag string) (instances, error) {
 
-	var input *ec2.DescribeInstancesInput
+	var input *_ec2.DescribeInstancesInput
 
 	if len(tag) > 0 {
-		input = &ec2.DescribeInstancesInput{
-			Filters: []*ec2.Filter{
+		input = &_ec2.DescribeInstancesInput{
+			Filters: []*_ec2.Filter{
 				{
 					Name:   aws.String("tag:Name"),
 					Values: []*string{aws.String(tag)},
@@ -108,13 +116,11 @@ func (a *Aws) GetInstances(tag string) (instances, error) {
 		}
 	}
 
-	result, err := a.ec2.DescribeInstances(input)
+	result, err := a.svc.DescribeInstances(input)
 
 	ins := instances{}
 
-	if err != nil {
-		fmt.Println("Error", err)
-	} else {
+	if err == nil {
 		if len(result.Reservations) > 0 {
 			for _, r := range result.Reservations {
 				for _, i := range r.Instances {

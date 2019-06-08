@@ -6,6 +6,8 @@ import (
 
 	"github.com/urfave/cli"
 	"github.com/yuya-tajima/aws-go/aws"
+	"github.com/yuya-tajima/aws-go/aws/ec2"
+	"github.com/yuya-tajima/aws-go/aws/util"
 )
 
 type errType int
@@ -16,7 +18,6 @@ const (
 	stopErr
 	rebootErr
 )
-
 const (
 	start  = "start"
 	stop   = "stop"
@@ -61,17 +62,20 @@ func main() {
 				id := c.String("instance-id")
 
 				if len(id) > 0 {
-					_aws.Start(&id, isDry)
+					_aws.Ec2.Start(&id, isDry)
 				} else {
-					result, err := _aws.GetInstances(tag)
+					result, err := _aws.Ec2.GetInstances(tag)
 					if err != nil {
 						printExitError(getErr, err)
 					}
+                    fmt.Printf("%v\n", result)
+                    /*
 					if len(result) > 0 {
 						for _, i := range result {
-							_aws.Start(i.InstanceId, isDry)
+							_aws.Ec2.Start(i.InstanceId, isDry)
 						}
 					}
+                    */
 				}
 
 				return nil
@@ -91,19 +95,23 @@ func main() {
 				tag := getNameTag(c)
 				id := c.String("instance-id")
 				if len(id) > 0 {
-					_aws.Stop(&id, isDry)
+					_aws.Ec2.Stop(&id, isDry)
 				} else {
-					result, err := _aws.GetInstances(tag)
+					result, err := _aws.Ec2.GetInstances(tag)
 					if err != nil {
 						printExitError(getErr, err)
 					}
+                    fmt.Printf("%v\n", result)
+                    /*
+                    fmt,Printf("%v\n", result)
 					if len(result) > 0 {
 						for _, i := range result {
-							_aws.Stop(i.InstanceId, isDry)
+							_aws.Ec2.Stop(i.InstanceId, isDry)
 						}
 					} else {
 						printNoInstance()
 					}
+                    */
 
 				}
 				return nil
@@ -123,19 +131,22 @@ func main() {
 				tag := getNameTag(c)
 				id := c.String("instance-id")
 				if len(id) > 0 {
-					_aws.Reboot(&id, isDry)
+					_aws.Ec2.Reboot(&id, isDry)
 				} else {
-					result, err := _aws.GetInstances(tag)
+					result, err := _aws.Ec2.GetInstances(tag)
 					if err != nil {
 						printExitError(getErr, err)
 					}
+                    fmt.Printf("%v\n", result)
+                    /*
 					if len(result) > 0 {
 						for _, i := range result {
-							_aws.Reboot(i.InstanceId, isDry)
+							_aws.Ec2.Reboot(i.InstanceId, isDry)
 						}
 					} else {
 						printNoInstance()
 					}
+                    */
 				}
 
 				return nil
@@ -152,16 +163,16 @@ func main() {
 			Usage: "",
 			Action: func(c *cli.Context) error {
 				tag := getNameTag(c)
-				result, err := _aws.GetInstances(tag)
+
+				result, err := _aws.Ec2.GetInstances(tag)
 				if err != nil {
 					printExitError(getErr, err)
 				}
-				if len(result) > 0 {
-					for _, i := range result {
-						aws.ShowDetails(i)
-					}
-				} else {
-					printNoInstance()
+
+				if result != nil {
+                    for _, v := range result.Items {
+                        showDetails(v)
+                    }
 				}
 				return nil
 			},
@@ -178,8 +189,17 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		aws.ExitErrorf("%v.", err)
+		util.ExitErrorf("%v.", err)
 	}
+}
+
+func showDetails(i ec2.Item) {
+	fmt.Printf("InstanceId: %s \n", i.InsID)
+	fmt.Printf("ImageId: %s \n", i.ImageID)
+	fmt.Printf("InstanceType: %s \n", i.InsType)
+	fmt.Printf("PrivateIpAddress: %s \n", i.PrivateIpV4)
+	fmt.Printf("PublicIpAddress: %s \n", i.PublicIpV4)
+	fmt.Printf("State: code:%d name:%s \n", i.StateCode, i.StateName)
 }
 
 func printNoInstance() {
@@ -189,7 +209,7 @@ func printNoInstance() {
 func printExitError(etype errType, err error) {
 	switch etype {
 	case getErr:
-		aws.ExitErrorf("failed to get instances, profile '%s' %v.", _aws.GetProfile(), err)
+		util.ExitErrorf("failed to get instances, profile '%s' %v.", _aws.GetProfile(), err)
 	}
 }
 

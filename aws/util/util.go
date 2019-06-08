@@ -1,10 +1,10 @@
-package aws
+package util
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
+	_awserr "github.com/aws/aws-sdk-go/aws/awserr"
 )
 
 func Errorf(msg string, args ...interface{}) {
@@ -34,7 +34,7 @@ func MaybeExitError(err error) {
 }
 
 func _error(err error) {
-	if aerr, ok := err.(awserr.Error); ok {
+	if aerr, ok := err.(_awserr.Error); ok {
 		switch aerr.Code() {
 		default:
 			_errorf(aerr.Error())

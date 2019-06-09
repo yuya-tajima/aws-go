@@ -20,7 +20,7 @@ func main() {
 	_aws.SetEc2Client()
 
 	e.GET("/ec2/desc", func(c echo.Context) error {
-        buffer.Reset()
+		buffer.Reset()
 		result, _ := _aws.GetInstances("")
 		if len(result) > 0 {
 			for _, i := range result {

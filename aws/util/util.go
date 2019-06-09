@@ -20,19 +20,6 @@ func _errorf(msg string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, msg+"\n", args...)
 }
 
-func MaybeError(err error) {
-	if err != nil {
-		_error(err)
-	}
-}
-
-func MaybeExitError(err error) {
-	if err != nil {
-		_error(err)
-		os.Exit(1)
-	}
-}
-
 func _error(err error) {
 	if aerr, ok := err.(_awserr.Error); ok {
 		switch aerr.Code() {

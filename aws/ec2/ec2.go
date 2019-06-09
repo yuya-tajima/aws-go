@@ -7,8 +7,14 @@ import (
 	_aws "github.com/aws/aws-sdk-go/aws"
 	_session "github.com/aws/aws-sdk-go/aws/session"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/yuya-tajima/aws-go/aws/util"
 )
+
+type Tag struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type Tags []Tag
 
 type Item struct {
 	InsID       string `json:"ins_id"`
@@ -18,10 +24,11 @@ type Item struct {
 	InsType     string `json:"ins_type"`
 	StateCode   int64  `json:"status_code"`
 	StateName   string `json:"status_name"`
+	Tags        Tags   `json:"tags"`
 }
 
 type Data struct {
-	Items []Item `json:"items"`
+	Items []*Item `json:"items"`
 }
 
 type Ec2 struct {
@@ -34,70 +41,49 @@ func NewEc2(session *_session.Session) *Ec2 {
 	}
 }
 
-func (a *Ec2) Reboot(s *string, dry bool) {
+func (a *Ec2) Reboot(s string, dry bool) (string, error) {
 
 	input := &_ec2.RebootInstancesInput{
 		InstanceIds: []*string{
-			s,
+			_aws.String(s),
 		},
 		DryRun: _aws.Bool(dry),
 	}
 
 	result, err := a.svc.RebootInstances(input)
+	output := fmt.Sprintf("%s", result)
 
-	util.MaybeExitError(err)
-
-	fmt.Println(result)
+	return output, err
 }
 
-func (a *Ec2) Start(s *string, dry bool) {
+func (a *Ec2) Start(s string, dry bool) (string, error) {
 
 	input := &_ec2.StartInstancesInput{
 		InstanceIds: []*string{
-			s,
+			_aws.String(s),
 		},
 		DryRun: _aws.Bool(dry),
 	}
 
 	result, err := a.svc.StartInstances(input)
+	output := fmt.Sprintf("%s", result)
 
-	util.MaybeExitError(err)
-
-	fmt.Println(result)
+	return output, err
 }
 
-func (a *Ec2) Stop(s *string, dry bool) {
+func (a *Ec2) Stop(s string, dry bool) (string, error) {
 
 	input := &_ec2.StopInstancesInput{
 		InstanceIds: []*string{
-			s,
+			_aws.String(s),
 		},
 		DryRun: _aws.Bool(dry),
 	}
 
 	result, err := a.svc.StopInstances(input)
+	output := fmt.Sprintf("%s", result)
 
-	util.MaybeError(err)
-
-	fmt.Println(result)
-}
-
-func ShowDetails(i *_ec2.Instance) {
-	fmt.Printf("InstanceId: %s \n", _aws.StringValue(i.InstanceId))
-	fmt.Printf("ImageId: %s \n", _aws.StringValue(i.ImageId))
-	fmt.Printf("InstanceType: %s \n", _aws.StringValue(i.InstanceType))
-	fmt.Printf("PrivateIpAddress: %s \n", _aws.StringValue(i.PrivateIpAddress))
-	fmt.Printf("PublicIpAddress: %s \n", _aws.StringValue(i.PublicIpAddress))
-	fmt.Printf("State: code:%d name:%s \n", _aws.Int64Value(i.State.Code), _aws.StringValue(i.State.Name))
-
-	if len(i.Tags) > 0 {
-		fmt.Print("*** This instance is associated with the following Tags. ***\n")
-		for _, v := range i.Tags {
-			fmt.Printf("%s:%s\n", _aws.StringValue(v.Key), _aws.StringValue(v.Value))
-		}
-	} else {
-		fmt.Print("This instance is not associated with any Tags. \n")
-	}
+	return output, err
 }
 
 func HasTagName(tag string, i *_ec2.Instance) bool {
@@ -115,6 +101,27 @@ func HasTagName(tag string, i *_ec2.Instance) bool {
 	return false
 }
 
+func (a *Ec2) GetInstance(id string) (*Data, error) {
+
+	result, err := a.DescInstanceById(id)
+
+	var data *Data
+
+	if err == nil {
+		if len(result.Reservations) > 0 {
+			data = &Data{}
+			for _, r := range result.Reservations {
+				for _, i := range r.Instances {
+					item := createItem(i)
+					data.Items = append(data.Items, item)
+				}
+			}
+		}
+	}
+
+	return data, err
+}
+
 func (a *Ec2) GetInstances(tag string) (*Data, error) {
 
 	result, err := a.DescInstances(tag)
@@ -126,36 +133,64 @@ func (a *Ec2) GetInstances(tag string) (*Data, error) {
 			data = &Data{}
 			for _, r := range result.Reservations {
 				for _, i := range r.Instances {
-					if len(i.Tags) > 0 {
-						fmt.Print("*** This instance is associated with the following Tags. ***\n")
-						for _, v := range i.Tags {
-							fmt.Printf("%s:%s\n", _aws.StringValue(v.Key), _aws.StringValue(v.Value))
-						}
-					} else {
-						fmt.Print("This instance is not associated with any Tags. \n")
-					}
-					data.Items = append(data.Items, Item{
-						InsID:       _aws.StringValue(i.InstanceId),
-						ImageID:     _aws.StringValue(i.ImageId),
-						PublicIpV4:  _aws.StringValue(i.PublicIpAddress),
-						PrivateIpV4: _aws.StringValue(i.PrivateIpAddress),
-						InsType:     _aws.StringValue(i.InstanceType),
-						StateCode:   _aws.Int64Value(i.State.Code),
-						StateName:   _aws.StringValue(i.State.Name),
-					})
+					item := createItem(i)
+					data.Items = append(data.Items, item)
 				}
 			}
 		}
 	}
 
 	return data, err
+}
 
+func createItem(i *_ec2.Instance) *Item {
+
+	item := Item{
+		InsID:       _aws.StringValue(i.InstanceId),
+		ImageID:     _aws.StringValue(i.ImageId),
+		PublicIpV4:  _aws.StringValue(i.PublicIpAddress),
+		PrivateIpV4: _aws.StringValue(i.PrivateIpAddress),
+		InsType:     _aws.StringValue(i.InstanceType),
+		StateCode:   _aws.Int64Value(i.State.Code),
+		StateName:   _aws.StringValue(i.State.Name),
+	}
+
+	addTagField(i, &item)
+
+	return &item
+}
+
+func addTagField(i *_ec2.Instance, item *Item) {
+	if len(i.Tags) > 0 {
+		var tags Tags
+		for _, v := range i.Tags {
+			tags = append(tags, Tag{
+				Key:   _aws.StringValue(v.Key),
+				Value: _aws.StringValue(v.Value),
+			})
+		}
+		item.Tags = tags
+	}
+}
+
+func (a *Ec2) DescInstanceById(id string) (*_ec2.DescribeInstancesOutput, error) {
+	var input *_ec2.DescribeInstancesInput
+
+	input = &_ec2.DescribeInstancesInput{
+		InstanceIds: []*string{
+			_aws.String(id),
+		},
+	}
+
+	result, err := a.svc.DescribeInstances(input)
+
+	return result, err
 }
 
 func (a *Ec2) DescInstances(tag string) (*_ec2.DescribeInstancesOutput, error) {
 	var input *_ec2.DescribeInstancesInput
 
-	if len(tag) > 0 {
+	if tag != "" {
 		input = &_ec2.DescribeInstancesInput{
 			Filters: []*_ec2.Filter{
 				{
@@ -170,24 +205,3 @@ func (a *Ec2) DescInstances(tag string) (*_ec2.DescribeInstancesOutput, error) {
 
 	return result, err
 }
-
-/*
-func (a *ec2) GetInstances(tag string) (instances, error) {
-
-	result, err := a.DescInstances(tag)
-
-	ins := instances{}
-
-	if err == nil {
-		if len(result.Reservations) > 0 {
-			for _, r := range result.Reservations {
-				for _, i := range r.Instances {
-					ins = append(ins, i)
-				}
-			}
-		}
-	}
-
-	return ins, err
-}
-*/

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bytes"
+	_ "fmt"
 	"net/http"
 
 	"github.com/labstack/echo"
@@ -13,25 +13,20 @@ var _aws *aws.Aws
 func main() {
 
 	e := echo.New()
-	var buffer bytes.Buffer
 
 	_aws = &aws.Aws{}
 	_aws.SetSession("tajima")
 	_aws.SetEc2Client()
 
 	e.GET("/ec2/desc", func(c echo.Context) error {
-		buffer.Reset()
-		result, _ := _aws.GetInstances("")
-		if len(result) > 0 {
-			for _, i := range result {
-				buffer.WriteString(*i.InstanceId)
-			}
-		}
+		result, _ := _aws.Ec2.GetInstances("")
 
-		return c.String(http.StatusOK, buffer.String())
+		var sCode int
 
+		sCode = http.StatusOK
+
+		return c.JSON(sCode, result)
 	})
 
 	e.Logger.Fatal(e.Start(":8080"))
-
 }

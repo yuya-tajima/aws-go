@@ -108,15 +108,7 @@ func (a *Ec2) GetInstance(id string) (*Data, error) {
 	var data *Data
 
 	if err == nil {
-		if len(result.Reservations) > 0 {
-			data = &Data{}
-			for _, r := range result.Reservations {
-				for _, i := range r.Instances {
-					item := createItem(i)
-					data.Items = append(data.Items, item)
-				}
-			}
-		}
+		data = getItems(result)
 	}
 
 	return data, err
@@ -129,15 +121,7 @@ func (a *Ec2) GetInstances(tag string) (*Data, error) {
 	var data *Data
 
 	if err == nil {
-		if len(result.Reservations) > 0 {
-			data = &Data{}
-			for _, r := range result.Reservations {
-				for _, i := range r.Instances {
-					item := createItem(i)
-					data.Items = append(data.Items, item)
-				}
-			}
-		}
+		data = getItems(result)
 	}
 
 	return data, err
@@ -158,6 +142,23 @@ func createItem(i *_ec2.Instance) *Item {
 	addTagField(i, &item)
 
 	return &item
+}
+
+func getItems(output *_ec2.DescribeInstancesOutput) *Data {
+
+	var data *Data
+
+	if len(output.Reservations) > 0 {
+		data = &Data{}
+		for _, r := range output.Reservations {
+			for _, i := range r.Instances {
+				item := createItem(i)
+				data.Items = append(data.Items, item)
+			}
+		}
+	}
+
+	return data
 }
 
 func addTagField(i *_ec2.Instance, item *Item) {

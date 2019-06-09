@@ -1,6 +1,8 @@
 package aws
 
 import (
+	_aws "github.com/aws/aws-sdk-go/aws"
+	_credentials "github.com/aws/aws-sdk-go/aws/credentials"
 	_session "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/yuya-tajima/aws-go/aws/ec2"
 )
@@ -13,6 +15,19 @@ type Aws struct {
 
 func (a *Aws) GetProfile() string {
 	return a.profile
+}
+
+func (a *Aws) SetStaticSession(id, key, token, region string) {
+
+	cred := _credentials.NewStaticCredentials(id, key, token)
+
+	sess := _session.Must(_session.NewSession(
+		&_aws.Config{Credentials: cred},
+		&_aws.Config{Region: _aws.String(region)},
+	))
+
+	a.session = sess
+	a.profile = ""
 }
 
 func (a *Aws) SetSession(profile string) {

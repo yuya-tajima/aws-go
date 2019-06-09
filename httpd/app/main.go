@@ -6,7 +6,9 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/gorilla/sessions"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo-contrib/session"
 )
 
 type Template struct {

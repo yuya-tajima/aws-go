@@ -5,7 +5,7 @@ go 1.12
 require (
 	github.com/aws/aws-sdk-go v1.19.41
 	github.com/labstack/echo v3.3.10+incompatible
-	github.com/labstack/gommon v0.2.8 // indirect
+	github.com/labstack/echo-contrib v0.0.0-20190220224852-7fa08ffe9442 // indirect
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/urfave/cli v1.20.0
 	github.com/valyala/fasttemplate v1.0.1 // indirect

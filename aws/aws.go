@@ -13,17 +13,22 @@ type Aws struct {
 	profile string
 }
 
+type Ec2Config struct {
+	Region string
+}
+
 func (a *Aws) GetProfile() string {
 	return a.profile
 }
 
 func (a *Aws) SetStaticSession(id, key, token, region string) {
-
 	cred := _credentials.NewStaticCredentials(id, key, token)
 
 	sess := _session.Must(_session.NewSession(
-		&_aws.Config{Credentials: cred},
-		&_aws.Config{Region: _aws.String(region)},
+		&_aws.Config{
+			Credentials: cred,
+			Region:      _aws.String(region),
+		},
 	))
 
 	a.session = sess
@@ -41,6 +46,14 @@ func (a *Aws) SetSession(profile string) {
 	a.profile = profile
 }
 
-func (a *Aws) SetEc2Client() {
-	a.Ec2 = ec2.NewEc2(a.session)
+func (a *Aws) SetEc2Client(config *Ec2Config) {
+
+	cfg := _aws.NewConfig()
+	if config != nil {
+		if config.Region != "" {
+			cfg.WithRegion(config.Region)
+		}
+	}
+
+	a.Ec2 = ec2.NewEc2(a.session, cfg)
 }

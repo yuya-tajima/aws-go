@@ -65,23 +65,25 @@ func main() {
 					output, err := _aws.Ec2.Start(id, isDry)
 					if err != nil {
 						printError(otherErr, err)
+					} else {
+						print(output)
 					}
-					print(output)
 				} else {
 					result, err := _aws.Ec2.GetInstances(tag)
 					if err != nil {
 						printError(getErr, err)
-					}
-					if result != nil {
-						for _, i := range result.Items {
-							output, err := _aws.Ec2.Start(i.InsID, isDry)
-							if err != nil {
-								printError(otherErr, err)
-							}
-							print(output)
-						}
 					} else {
-						printNoInstance()
+						if result != nil {
+							for _, i := range result.Items {
+								output, err := _aws.Ec2.Start(i.InsID, isDry)
+								if err != nil {
+									printError(otherErr, err)
+								}
+								print(output)
+							}
+						} else {
+							printNoInstance()
+						}
 					}
 				}
 
@@ -107,23 +109,25 @@ func main() {
 					output, err := _aws.Ec2.Stop(id, isDry)
 					if err != nil {
 						printError(otherErr, err)
+					} else {
+						print(output)
 					}
-					print(output)
 				} else {
 					result, err := _aws.Ec2.GetInstances(tag)
 					if err != nil {
 						printError(getErr, err)
-					}
-					if result != nil {
-						for _, i := range result.Items {
-							output, err := _aws.Ec2.Stop(i.InsID, isDry)
-							if err != nil {
-								printError(otherErr, err)
-							}
-							print(output)
-						}
 					} else {
-						printNoInstance()
+						if result != nil {
+							for _, i := range result.Items {
+								output, err := _aws.Ec2.Stop(i.InsID, isDry)
+								if err != nil {
+									printError(otherErr, err)
+								}
+								print(output)
+							}
+						} else {
+							printNoInstance()
+						}
 					}
 				}
 				return nil
@@ -146,23 +150,25 @@ func main() {
 					output, err := _aws.Ec2.Reboot(id, isDry)
 					if err != nil {
 						printError(otherErr, err)
+					} else {
+						print(output)
 					}
-					print(output)
 				} else {
 					result, err := _aws.Ec2.GetInstances(tag)
 					if err != nil {
 						printError(getErr, err)
-					}
-					if result != nil {
-						for _, i := range result.Items {
-							output, err := _aws.Ec2.Reboot(i.InsID, isDry)
-							if err != nil {
-								printError(otherErr, err)
-							}
-							print(output)
-						}
 					} else {
-						printNoInstance()
+						if result != nil {
+							for _, i := range result.Items {
+								output, err := _aws.Ec2.Reboot(i.InsID, isDry)
+								if err != nil {
+									printError(otherErr, err)
+								}
+								print(output)
+							}
+						} else {
+							printNoInstance()
+						}
 					}
 				}
 
@@ -194,14 +200,14 @@ func main() {
 
 				if err != nil {
 					printError(getErr, err)
-				}
-
-				if result != nil {
-					for _, i := range result.Items {
-						showDetails(i)
-					}
 				} else {
-					printNoInstance()
+					if result != nil {
+						for _, i := range result.Items {
+							showDetails(i)
+						}
+					} else {
+						printNoInstance()
+					}
 				}
 
 				return nil
@@ -218,7 +224,8 @@ func main() {
 	app.Before = func(c *cli.Context) error {
 		_aws = &aws.Aws{}
 		_aws.SetSession(c.GlobalString("profile"))
-		_aws.SetEc2Client()
+		_aws.SetEc2Client(nil)
+
 		setMetaData(c)
 		return nil
 	}

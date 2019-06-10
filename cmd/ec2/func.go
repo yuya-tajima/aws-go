@@ -27,19 +27,19 @@ func showDetails(i *ec2.Item) {
 }
 
 func printNoInstance() {
-	fmt.Printf("There is no instance.\n")
+	fmt.Printf("There is no instance in %s.\n", _aws.Ec2.GetCurrentRegion())
 }
 
 func print(s string) {
 	if s != "" {
-		fmt.Print(s)
+		fmt.Println(s)
 	}
 }
 
 func printError(etype errType, err error) {
 	switch etype {
 	case getErr:
-		util.Errorf("failed to get instances, profile '%s' %v", _aws.GetProfile(), err)
+		util.Errorf("failed to get instances, %v", err)
 	case otherErr:
 		util.Errorf("%v", err)
 	}

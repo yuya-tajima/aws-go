@@ -14,6 +14,10 @@ type Tag struct {
 	Value string `json:"value"`
 }
 
+type Config struct {
+	Region string
+}
+
 type Tags []Tag
 
 type Item struct {
@@ -35,10 +39,25 @@ type Ec2 struct {
 	svc *_ec2.EC2
 }
 
-func NewEc2(session *_session.Session) *Ec2 {
+func NewEc2(session *_session.Session, cfgs *_aws.Config) *Ec2 {
 	return &Ec2{
-		svc: _ec2.New(session),
+		svc: _ec2.New(session, cfgs),
 	}
+}
+
+func (a *Ec2) GetCurrentRegion() string {
+
+	region := a.svc.Client.ClientInfo.SigningRegion
+
+	return region
+}
+
+func (a *Ec2) DescRegions() {
+
+	input := &_ec2.DescribeRegionsInput{}
+	result, _ := a.svc.DescribeRegions(input)
+
+	fmt.Printf("%v\n", result)
 }
 
 func (a *Ec2) Reboot(s string, dry bool) (string, error) {

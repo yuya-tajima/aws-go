@@ -1,23 +1,24 @@
 package main
 
 import (
-	_ "fmt"
 	"net/http"
 
 	"github.com/labstack/echo"
 	"github.com/yuya-tajima/aws-go/aws/util"
 )
 
-func Ec2PostOperations(c echo.Context) error {
+func ec2PostOperations(c echo.Context) error {
 
 	operation := c.Param("operation")
+
+	cc := c.(*awsContext)
 
 	var err error
 	switch operation {
 	case "start":
-		err = ec2Start(c)
+		err = cc.ec2Start()
 	case "stop":
-		err = ec2Stop(c)
+		err = cc.ec2Stop()
 	default:
 		err = echo.NotFoundHandler(c)
 	}
@@ -25,14 +26,16 @@ func Ec2PostOperations(c echo.Context) error {
 	return err
 }
 
-func Ec2GetOperations(c echo.Context) error {
+func ec2GetOperations(c echo.Context) error {
 
 	operation := c.Param("operation")
+
+	cc := c.(*awsContext)
 
 	var err error
 	switch operation {
 	case "desc":
-		err = ec2Desc(c)
+		err = cc.ec2Desc()
 	default:
 		err = echo.NotFoundHandler(c)
 	}
@@ -40,9 +43,10 @@ func Ec2GetOperations(c echo.Context) error {
 	return err
 }
 
-func ec2Start(c echo.Context) error {
+func (a *awsContext) ec2Start() error {
 
-	_aws := GetEc2Client(c)
+	_aws := a._aws
+	c := a.Context
 
 	insId := c.FormValue("ins-id")
 
@@ -56,9 +60,10 @@ func ec2Start(c echo.Context) error {
 	}
 }
 
-func ec2Stop(c echo.Context) error {
+func (a *awsContext) ec2Stop() error {
 
-	_aws := GetEc2Client(c)
+	_aws := a._aws
+	c := a.Context
 
 	insId := c.FormValue("ins-id")
 
@@ -70,12 +75,11 @@ func ec2Stop(c echo.Context) error {
 	} else {
 		return c.JSON(http.StatusOK, result)
 	}
-
 }
 
-func ec2Desc(c echo.Context) error {
-
-	_aws := GetEc2Client(c)
+func (a *awsContext) ec2Desc() error {
+	_aws := a._aws
+	c := a.Context
 
 	result, err := _aws.Ec2.GetInstances("")
 
@@ -85,5 +89,4 @@ func ec2Desc(c echo.Context) error {
 	} else {
 		return c.JSON(http.StatusOK, result)
 	}
-
 }

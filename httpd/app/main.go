@@ -3,14 +3,14 @@ package main
 import (
 	_ "fmt"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/session"
-	"github.com/yuya-tajima/aws-go/httpd/app/controllers"
-	"github.com/yuya-tajima/aws-go/httpd/app/template"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/yuya-tajima/aws-go/httpd/app/auth"
-	_"github.com/yuya-tajima/aws-go/httpd/app/middleware"
+	"github.com/yuya-tajima/aws-go/httpd/app/controllers"
+	mw "github.com/yuya-tajima/aws-go/httpd/app/middleware"
+	"github.com/yuya-tajima/aws-go/httpd/app/template"
 )
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 
 	e.Static("/", "assets")
 
-	//e.Use(_middleware.Author)
+	e.Use(mw.Author)
 
 	e.GET("/", controllers.Index)
 	e.GET("/ec2/desc", controllers.DescEc2)

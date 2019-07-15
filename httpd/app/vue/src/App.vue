@@ -63,7 +63,7 @@
 			</v-content>
 		</template>
 		<template v-else>
-			<my-login></my-login>
+			<app-login></app-login>
 		</template>
 	</v-app>
 </template>
@@ -78,12 +78,12 @@ export default {
 		}
 	},
 	components: {
-		'my-login':Login
+		'app-login':Login
 	},
 	created() {
 	},
 	mounted() {
-		this.$store.commit('setCred', true)
+		//this.$store.commit('setCred', true)
 	},
 	methods: {
 		reload: function (event) {

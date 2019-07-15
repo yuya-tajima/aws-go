@@ -1,47 +1,55 @@
 <template>
-	<v-container fluid>
-		<v-data-table
-		:headers="headers"
-		:items="items"
-		hide-actions
-		class="ec2-desc-table"
-		>
-			<template v-slot:items="info">
-				<td class="text-xs-left">{{ info.item.name }}</td>
-				<td class="text-xs-left">{{ info.item.ins_id }}</td>
-				<td class="text-xs-left">{{ info.item.image_id }}</td>
-				<td class="text-xs-left">{{ info.item.public_ipv4 }}</td>
-				<td class="text-xs-left">{{ info.item.private_ipv4 }}</td>
-				<td class="text-xs-left">{{ info.item.ins_type }}</td>
-				<td class="text-xs-left">
-				<v-menu bottom offset-y>
-					<template v-slot:activator="{ on }">
-						<a v-bind:class="actionClass(info.item.status_name)" v-on="on">{{ info.item.status_name }}</a>
-					</template>
-					<v-list dense>
-						<v-list-tile
-							v-for="(item, i) in actions"
-							:key="i"
-							v-on:click=""
-						>
-							<v-icon small left>
-								{{ item.icon }}
-							</v-icon>
-							<v-list-tile-title>
-								<a v-on:click.stop="action(item.action, info.item.ins_id)">
-									{{ item.name }}
-								</a>
-							</v-list-tile-title>
-						</v-list-tile> </v-list>
-				</v-menu> 
 
-				</td> </template>
-		</v-data-table>
+	<v-container fluid>
+		<template v-if="!loading">
+			<v-data-table
+			:headers="headers"
+			:items="items"
+			hide-actions
+			class="ec2-desc-table"
+			>
+				<template v-slot:items="info">
+					<td class="text-xs-left">{{ info.item.name }}</td>
+					<td class="text-xs-left">{{ info.item.ins_id }}</td>
+					<td class="text-xs-left">{{ info.item.image_id }}</td>
+					<td class="text-xs-left">{{ info.item.public_ipv4 }}</td>
+					<td class="text-xs-left">{{ info.item.private_ipv4 }}</td>
+					<td class="text-xs-left">{{ info.item.ins_type }}</td>
+					<td class="text-xs-left">
+					<v-menu bottom offset-y>
+						<template v-slot:activator="{ on }">
+							<a v-bind:class="actionClass(info.item.status_name)" v-on="on">{{ info.item.status_name }}</a>
+						</template>
+						<v-list dense>
+							<v-list-tile
+								v-for="(item, i) in actions"
+								:key="i"
+								v-on:click=""
+							>
+								<v-icon small left>
+									{{ item.icon }}
+								</v-icon>
+								<v-list-tile-title>
+									<a v-on:click.stop="action(item.action, info.item.ins_id)">
+										{{ item.name }}
+									</a>
+								</v-list-tile-title>
+							</v-list-tile> </v-list>
+					</v-menu> 
+
+					</td>
+				</template>
+			</v-data-table>
+		</template>
+		<template v-else>
+			<app-loading></app-loading>
+		</template>
 	</v-container>
 </template>
 
 <script>
 import api from '@/utils/api.js'
+import Loading from '@/components/loading.vue'
 export default {
 	name: 'ec2',
 	data () {
@@ -102,19 +110,18 @@ export default {
 					action: 'stop',
 					icon: 'power_off'
 				},
-			]
+			],
+			loading: false
 		}
+	},
+	components: {
+		'app-loading':Loading
 	},
 	methods: {
 		action(action, ins_id) {
 			api.post(`/ec2/${action}`,
 				{
 					ins_id: ins_id
-				},
-				{
-					headers: {
-						'Content-Type': 'application/json',
-					}
 				}
 			)
 			.then( response => {
@@ -139,11 +146,8 @@ export default {
 			this.fetch()
 		},
 		fetch () {
-			api.get('/ec2/desc', {
-				headers: {
-					'Content-Type': 'application/json',
-				}
-			})
+			this.loading = true;
+			api.get('/ec2/desc')
 			.then( response => {
 				const NAME_TAG = 'Name';
 				this.items = [];
@@ -161,7 +165,6 @@ export default {
 							}
 						});
 					}
-
 					this.items.push(item);
 				});
 			})
@@ -169,7 +172,7 @@ export default {
 				console.log(error);
 			})
 			.finally( () => {
-				//
+				this.loading = false;
 			});
 		}
 	},

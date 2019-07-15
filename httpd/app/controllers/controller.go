@@ -1,16 +1,19 @@
 package controllers
 
 import (
-	_"fmt"
 	"net/http"
-	
+
 	"github.com/labstack/echo/v4"
-	"github.com/yuya-tajima/aws-go/httpd/app/client"
-	"github.com/yuya-tajima/aws-go/httpd/app/auth"
 	"github.com/yuya-tajima/aws-go/httpd/api/data"
+	"github.com/yuya-tajima/aws-go/httpd/app/auth"
+	"github.com/yuya-tajima/aws-go/httpd/app/client"
 )
 
 func Index(c echo.Context) error {
+
+	cc := auth.NewContext(c)
+	cc.DeleteAuth()
+
 	return c.Render(http.StatusOK, "index", nil)
 }
 
@@ -53,10 +56,8 @@ func Auth(c echo.Context) error {
 
 	cc := auth.NewContext(c)
 
-	if ok := cc.IsAuthUser(); ! ok {
-		if err := cc.Auth(); err != nil {
-			return cc.AuthJSON()
-		}
+	if err := cc.Auth(); err != nil {
+		return cc.AuthJSON()
 	}
 
 	cc.SetAuthSession()

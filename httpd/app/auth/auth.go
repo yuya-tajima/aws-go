@@ -23,11 +23,11 @@ type creds struct {
 
 var (
 	user users
-	aws *creds
+	aws  *creds
 )
 
 type Login struct {
-	Id string `json:"login"`
+	Id  string `json:"login"`
 	Pwd string `json:"password"`
 }
 
@@ -38,7 +38,7 @@ func Init() {
 	rand.Seed(seed.Int64())
 }
 
-func AuthUser (id string, pass string) bool {
+func AuthUser(id string, pass string) bool {
 	if um, err := getUserMeta(id); err == nil {
 		if err := um.passwordVerify(pass); err == nil {
 			return true
@@ -67,7 +67,7 @@ func (um *userMeta) passwordVerify(pw string) error {
 	return bcrypt.CompareHashAndPassword([]byte(um.hash), []byte(pw))
 }
 
-func NewUser (id string) (string ,error){
+func NewUser(id string) (string, error) {
 
 	password := GenerateRandom(passLen)
 	hash, err := hashPassword(password)
@@ -85,15 +85,15 @@ func NewUser (id string) (string ,error){
 	return password, nil
 }
 
-func setUser (id string, um *userMeta) {
+func setUser(id string, um *userMeta) {
 	if user == nil {
-		user = users{id:um}
+		user = users{id: um}
 	} else {
 		user[id] = um
 	}
 }
 
-func getUserMeta (id string) (*userMeta, error) {
+func getUserMeta(id string) (*userMeta, error) {
 	if um, ok := user[id]; ok {
 		return um, nil
 	} else {
@@ -136,4 +136,3 @@ func SetCredByFile(profile string) error {
 
 	return nil
 }
-

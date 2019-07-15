@@ -1,7 +1,7 @@
 package main
 
 import (
-	_"fmt"
+	_ "fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"

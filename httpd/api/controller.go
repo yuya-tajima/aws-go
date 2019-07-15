@@ -1,11 +1,13 @@
 package main
 
 import (
+	_"fmt"
 	"net/http"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"github.com/yuya-tajima/aws-go/aws"
 	"github.com/yuya-tajima/aws-go/aws/util"
+	"github.com/yuya-tajima/aws-go/httpd/api/data"
 )
 
 type awsContext struct {
@@ -73,7 +75,12 @@ func (a *awsContext) ec2Start() error {
 	_aws := a._aws
 	c := a.Context
 
-	insId := c.FormValue("ins-id")
+	i := new(data.InsTance)
+	if err := c.Bind(i); err != nil {
+		return err
+	}
+
+	insId := i.InsID
 
 	result, err := _aws.Ec2.Start(insId, false)
 
@@ -90,7 +97,12 @@ func (a *awsContext) ec2Stop() error {
 	_aws := a._aws
 	c := a.Context
 
-	insId := c.FormValue("ins-id")
+	i := new(data.InsTance)
+	if err := c.Bind(i); err != nil {
+		return err
+	}
+
+	insId := i.InsID
 
 	result, err := _aws.Ec2.Stop(insId, false)
 

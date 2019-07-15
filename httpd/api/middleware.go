@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 func ec2Client(next echo.HandlerFunc) echo.HandlerFunc {

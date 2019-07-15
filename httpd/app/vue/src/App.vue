@@ -1,71 +1,75 @@
 
 <template>
 	<v-app>
-		<v-navigation-drawer
-			fixed
-			clipped app
-			v-model="navBar"
-			width=150
-		>
-			<v-list dense class="pt-2">
-				<router-link to="/">
-					<v-list-tile>
-						<v-list-tile-action>
-							<v-icon>dashboard</v-icon>
-						</v-list-tile-action>
-						<v-list-tile-content>
-							<v-list-tile-title>Index</v-list-tile-title>
-						</v-list-tile-content>
-					</v-list-tile>
-				</router-link>
-				<router-link to="/ec2">
-					<v-list-tile>
-						<v-list-tile-action>
-							<v-icon>computer</v-icon>
-						</v-list-tile-action>
-						<v-list-tile-content>
-							<v-list-tile-title>EC2</v-list-tile-title>
-						</v-list-tile-content>
-					</v-list-tile>
-				</router-link>
-			</v-list>
-		</v-navigation-drawer>
-		<v-toolbar
-			dark
-			color="primary"
-			clipped-left
-			fixed
-			app
-		>
-			<v-toolbar-side-icon v-on:click.stop="navBar =! navBar">
-			</v-toolbar-side-icon>
-			<v-toolbar-title class="white--text">
-				Photoruction Development Admin
-			</v-toolbar-title>
-			<v-spacer></v-spacer>
-			<v-btn icon>
-				<v-icon>search</v-icon>
-			</v-btn>
-			<v-btn icon>
-				<v-icon>apps</v-icon>
-			</v-btn>
-			<v-btn icon v-on:click="reload">
-				<v-icon>refresh</v-icon>
-			</v-btn>
-			<v-btn icon>
-				<v-icon>more_vert</v-icon>
-			</v-btn>
-		</v-toolbar>
-		<v-content>
-			<v-fade-transition mode="out-in">
-				<router-view></router-view>
-			</v-fade-transition>
-		</v-content>
+		<template v-if="$store.state.cred === true">
+			<v-navigation-drawer
+				fixed
+				clipped app
+				v-model="navBar"
+				width=150
+			>
+				<v-list dense class="pt-2">
+					<router-link to="/"> <v-list-tile>
+							<v-list-tile-action>
+								<v-icon>dashboard</v-icon>
+							</v-list-tile-action>
+							<v-list-tile-content>
+								<v-list-tile-title>Index</v-list-tile-title>
+							</v-list-tile-content>
+						</v-list-tile>
+					</router-link>
+					<router-link to="/ec2">
+						<v-list-tile>
+							<v-list-tile-action>
+								<v-icon>computer</v-icon>
+							</v-list-tile-action>
+							<v-list-tile-content>
+								<v-list-tile-title>EC2</v-list-tile-title>
+							</v-list-tile-content>
+						</v-list-tile>
+					</router-link>
+				</v-list>
+			</v-navigation-drawer>
+			<v-toolbar
+				dark
+				color="primary"
+				clipped-left
+				fixed
+				app
+			>
+				<v-toolbar-side-icon v-on:click.stop="navBar =! navBar">
+				</v-toolbar-side-icon>
+				<v-toolbar-title class="white--text">
+					Photoruction Development Admin
+				</v-toolbar-title>
+				<v-spacer></v-spacer>
+				<v-btn icon>
+					<v-icon>search</v-icon>
+				</v-btn>
+				<v-btn icon>
+					<v-icon>apps</v-icon>
+				</v-btn>
+				<v-btn icon v-on:click="reload">
+					<v-icon>refresh</v-icon>
+				</v-btn>
+				<v-btn icon>
+					<v-icon>more_vert</v-icon>
+				</v-btn>
+			</v-toolbar>
+			<v-content>
+				<v-fade-transition mode="out-in">
+					<router-view ref="content"></router-view>
+				</v-fade-transition>
+			</v-content>
+		</template>
+		<template v-else>
+			<my-login></my-login>
+		</template>
 	</v-app>
 </template>
 
 <script>
-import axios from 'axios';
+import Login from '@/components/Login.vue'
 export default {
 	name: 'app',
 	data () {
@@ -73,30 +77,17 @@ export default {
 			navBar:null
 		}
 	},
+	components: {
+		'my-login':Login
+	},
 	created() {
-		let self = this;
-		axios.get('http://localhost:8080/cred', {
-			headers: {
-				'Content-Type': 'application/json',
-			}
-		})
-		.then(function (response) {
-			let data = response.data;
-			console.log('created');
-		})
-		.catch(function (error) {
-			console.log(response);
-		})
-		.finally(function () {
-			//
-		});
 	},
 	mounted() {
-		console.log('app load');
+		this.$store.commit('setCred', true)
 	},
 	methods: {
 		reload: function (event) {
-			this.$router.go({path: this.$router.currentRoute.path, force: true});
+			this.$refs.content.reload()
 		}
 	}
 }

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"github.com/yuya-tajima/aws-go/aws"
 )
 

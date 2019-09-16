@@ -20,6 +20,10 @@ type Config struct {
 
 type Tags []Tag
 
+type Instance struct {
+	*_ec2.DescribeInstancesOutput
+}
+
 type Item struct {
 	InsID       string `json:"ins_id"`
 	ImageID     string `json:"image_id"`
@@ -39,7 +43,7 @@ type Ec2 struct {
 	svc *_ec2.EC2
 }
 
-func NewEc2(session *_session.Session, cfgs *_aws.Config) *Ec2 {
+func New(session *_session.Session, cfgs *_aws.Config) *Ec2 {
 	return &Ec2{
 		svc: _ec2.New(session, cfgs),
 	}
@@ -120,17 +124,16 @@ func HasTagName(tag string, i *_ec2.Instance) bool {
 	return false
 }
 
-func (a *Ec2) GetInstance(id string) (*Data, error) {
+func (a *Ec2) GetInstance(id string) (data *Data, err error) {
 
 	result, err := a.DescInstanceById(id)
 
-	var data *Data
-
 	if err == nil {
-		data = getItems(result)
+		c := &Instance{result}
+		data = c.getItems()
 	}
 
-	return data, err
+	return
 }
 
 func (a *Ec2) GetInstances(tag string) (*Data, error) {
@@ -140,13 +143,14 @@ func (a *Ec2) GetInstances(tag string) (*Data, error) {
 	var data *Data
 
 	if err == nil {
-		data = getItems(result)
+		c := &Instance{result}
+		data = c.getItems()
 	}
 
 	return data, err
 }
 
-func createItem(i *_ec2.Instance) *Item {
+func (c *Instance) createItem(i *_ec2.Instance) *Item {
 
 	item := Item{
 		InsID:       _aws.StringValue(i.InstanceId),
@@ -158,29 +162,28 @@ func createItem(i *_ec2.Instance) *Item {
 		StateName:   _aws.StringValue(i.State.Name),
 	}
 
-	addTagField(i, &item)
+	c.addTagField(i, &item)
 
 	return &item
 }
 
-func getItems(output *_ec2.DescribeInstancesOutput) *Data {
+func (c *Instance) getItems() *Data {
 
 	var data *Data
 
-	if len(output.Reservations) > 0 {
+	if len(c.Reservations) > 0 {
 		data = &Data{}
-		for _, r := range output.Reservations {
+		for _, r := range c.Reservations {
 			for _, i := range r.Instances {
-				item := createItem(i)
+				item := c.createItem(i)
 				data.Items = append(data.Items, item)
 			}
 		}
 	}
-
 	return data
 }
 
-func addTagField(i *_ec2.Instance, item *Item) {
+func (c *Instance) addTagField(i *_ec2.Instance, item *Item) {
 	if len(i.Tags) > 0 {
 		var tags Tags
 		for _, v := range i.Tags {

@@ -5,11 +5,13 @@ import (
 	_credentials "github.com/aws/aws-sdk-go/aws/credentials"
 	_session "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/yuya-tajima/aws-go/aws/ec2"
+	"github.com/yuya-tajima/aws-go/aws/s3"
 )
 
 type Aws struct {
 	session *_session.Session
 	Ec2     *ec2.Ec2
+	S3      *s3.S3
 	profile string
 }
 
@@ -55,5 +57,17 @@ func (a *Aws) SetEc2Client(config *Ec2Config) {
 		}
 	}
 
-	a.Ec2 = ec2.NewEc2(a.session, cfg)
+	a.Ec2 = ec2.New(a.session, cfg)
+}
+
+func (a *Aws) SetS3Client(config *Ec2Config) {
+
+	cfg := _aws.NewConfig()
+	if config != nil {
+		if config.Region != "" {
+			cfg.WithRegion(config.Region)
+		}
+	}
+
+	a.S3 = s3.New(a.session, cfg)
 }
